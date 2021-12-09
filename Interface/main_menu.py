@@ -1,6 +1,8 @@
-import pygame, sys
+import pygame, sys, os
 from pygame.constants import K_ESCAPE, KEYDOWN, MOUSEBUTTONDOWN
 
+path = os.path.join(os.path.dirname(__file__))
+sys.path.insert(1, path)
 import play_game
 
 width = 800
@@ -143,5 +145,5 @@ def about():
         pygame.display.update()
         clock.tick(60)
 
-if __name__ == "__main__":
-    main_menu()
+# if __name__ == "__main__":
+#     main_menu()

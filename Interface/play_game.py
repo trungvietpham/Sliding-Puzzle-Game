@@ -1,8 +1,11 @@
 # Slide Puzzle
 
+import abc
 from tkinter.constants import S, TRUE
-import pygame, sys, random
+import pygame, sys, random,os
 from pygame.locals import *
+sys.path.append("..")
+from Backend.SlidingPuzzle import slidingPuzzleGame
 
 # Khởi tạo các biến ban đầu
 # BOARDWIDTH = None # number of columns in the board
@@ -105,9 +108,13 @@ def main(size):
                         )  # clicked on New Game button
                         allMoves = []
                     elif SOLVE_RECT.collidepoint(event.pos):
-                        resetAnimation(
-                            mainBoard, solutionSeq + allMoves
-                        )  # clicked on Solve button
+                        write_board_to_file(mainBoard)
+                        slidingPuzzleGame.abc(BOARDHEIGHT, "HUMAN")
+                        read_algo_and_show(mainBoard, "human")
+                        # resetAnimation(
+                        #     mainBoard, solutionSeq + allMoves
+                        # )  # clicked on Solve button
+
                         solutionSeq = []
                         allMoves = []
                 else:
@@ -384,6 +391,39 @@ def resetAnimation(board, allMoves):
             oppositeMove = RIGHT
         slideAnimation(board, oppositeMove, "", animationSpeed=int(TILESIZE / 2))
         makeMove(board, oppositeMove)
+
+# write to file for calculate algorithm
+def write_board_to_file(board):
+    path = os.path.join(os.path.dirname(__file__), "..", "Backend", "SlidingPuzzle",  "inputOutput", "input.txt")
+    file = open(path, "w")
+    for i in range(BOARDWIDTH): 
+        for j in range(BOARDHEIGHT): 
+            if board[j][i] == None:
+                file.write("0")
+            else:
+                file.write(str(board[j][i]))
+            file.write(" ")
+        file.write('\n')
+
+def read_algo_and_show(board, algorithms):
+    path = os.path.join(os.path.dirname(__file__), "..", "Backend", "SlidingPuzzle",  "inputOutput", "solution.txt")
+    file = open(path, "r")
+    lines = file.readlines()
+    text = "Solving by " + algorithms +" algorithm..."
+    for line in lines:
+        move =""
+        if line.strip() == "UP": 
+            move = DOWN
+        if line.strip() == "DOWN": 
+            move = UP
+        if line.strip() == "LEFT": 
+            move = RIGHT
+        if line.strip() == "RIGHT": 
+            move = LEFT
+
+        slideAnimation(board, move, text, animationSpeed=int(TILESIZE / 3))
+        makeMove(board, move)
+        
 
 
 # if __name__ == "__main__":

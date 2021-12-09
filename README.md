@@ -1,15 +1,22 @@
-# Sliding-block puzzle solver
+A.cách chạy:
+python .\SlidingPuzzle\slidingPuzzleGame.py
 
-We explore the speed and optimality of algorithms to solve the sliding-puzzle game. We compare A*, BFS, greedy best-first search, and a custom human-based algorithm. In the 24-puzzle game, finding the optimal solution using BFS is infeasible, finding the optimal solution using A* can take hours or days, but finding a **sub-optimal** solution using our human-based algorithm takes a few seconds or minutes.
+B.các thay đổi được cài đặt trong slidingPuzzleGame.py:
 
-To run our human-based algorithm, clone or download the repo and run:
+1.Thay đổi size
+n=10,3,7,20,...
 
-```
-python solver.py
-```
+2.Thay đổi thuật toán
+algorithms="HUMAN","BFS","IDS","DFS","A*"
 
-To run the A\* search algorithm run:
+3.chọn chơi random hay nhập input
+board = createBoard(1,n) là dùng file input.txt
 
-```
-python solver.py --astar
-```
+board = createBoard(2,n) là dùng bảng random
+
+C.ngoài ra: 
+
+1.file output.txt để xuất các bước đi
+
+2.nếu chỉ muốn hiện (Left,Right,DOWN,UP) trong file output mà không muốn hiện số thì
+chỉ cần vào utils/utils trong hàm SAVE khoảng dòng 35,36 ẩn "f.write(to_string(i[1]))" là đc
