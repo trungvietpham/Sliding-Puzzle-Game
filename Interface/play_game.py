@@ -3,6 +3,7 @@
 import abc
 from tkinter.constants import S, TRUE
 import pygame, sys, random,os
+import time
 from pygame.locals import *
 sys.path.append("..")
 from Backend.SlidingPuzzle import slidingPuzzleGame
@@ -45,11 +46,18 @@ RIGHT = "right"
 
 
 def main(size):
-    global FPSCLOCK, DISPLAYSURF, BASICFONT, RESET_SURF, RESET_RECT, NEW_SURF, NEW_RECT, SOLVE_SURF, SOLVE_RECT
-    global BOARDWIDTH, BOARDHEIGHT, TILESIZE, XMARGIN, YMARGIN
+    global FPSCLOCK, DISPLAYSURF, BASICFONT, RESET_SURF, RESET_RECT, NEW_SURF, NEW_RECT, SOLVE_SURF, SOLVE_RECT, astar_surf, astar_rect, bfs_surf, bfs_rect, dfs_surf, dfs_rect, human_surf, human_rect, ids_surf, ids_rect
+    global BOARDWIDTH, BOARDHEIGHT, TILESIZE, XMARGIN, YMARGIN, boardsize
+    global flag #show or hide when click on solve
     BOARDWIDTH = size
     BOARDHEIGHT = size
     boardsize = 500
+    flag = 0
+    human_flag = 0
+    dfs_flag = 0
+    bfs_flag = 0
+    astar_flag = 0
+    ids_flag = 0
 
     TILESIZE = boardsize // BOARDWIDTH
     # XMARGIN = int((WINDOWWIDTH - (TILESIZE * BOARDWIDTH + (BOARDWIDTH - 1))) / 2)
@@ -64,18 +72,23 @@ def main(size):
     BASICFONT = pygame.font.Font("freesansbold.ttf", BASICFONTSIZE)
 
     # Store the option buttons and their rectangles in OPTIONS.
-    offsetButtonY = (WINDOWWIDTH - XMARGIN - boardsize) //2  
-    RESET_SURF, RESET_RECT = makeTextCenter(
-        "Reset", BUTTONTEXTCOLOR, BUTTONCOLOR, WINDOWWIDTH - offsetButtonY, WINDOWHEIGHT - 120
+    offsetButtonY = (WINDOWWIDTH - XMARGIN - boardsize) - 20 
+    RESET_SURF, RESET_RECT = makeText(
+        "Reset", BUTTONTEXTCOLOR, BUTTONCOLOR, WINDOWWIDTH - offsetButtonY, 300
     )
-    NEW_SURF, NEW_RECT = makeTextCenter(
-        "New Game", BUTTONTEXTCOLOR, BUTTONCOLOR, WINDOWWIDTH - offsetButtonY, WINDOWHEIGHT - 90
+    NEW_SURF, NEW_RECT = makeText(
+        "New Game", BUTTONTEXTCOLOR, BUTTONCOLOR, WINDOWWIDTH - offsetButtonY, 330
     )
-    SOLVE_SURF, SOLVE_RECT = makeTextCenter(
-        "Solve", BUTTONTEXTCOLOR, BUTTONCOLOR, WINDOWWIDTH - offsetButtonY, WINDOWHEIGHT - 60
+    SOLVE_SURF, SOLVE_RECT = makeText(
+        "Solve", BUTTONTEXTCOLOR, BUTTONCOLOR, WINDOWWIDTH - offsetButtonY, 360
     )
+    human_surf, human_rect = makeText("Human", BLACK, GREEN, XMARGIN+boardsize+50, 400)
+    astar_surf, astar_rect = makeText("A-star", BLACK, GREEN, XMARGIN+boardsize+50, 430)
+    bfs_surf, bfs_rect = makeText("BFS", BLACK, GREEN, XMARGIN+boardsize+50, 460)
+    dfs_surf, dfs_rect = makeText("DFS", BLACK, GREEN, XMARGIN+boardsize+50, 490)
+    ids_surf, ids_rect = makeText("IDS", BLACK, GREEN, XMARGIN+boardsize+50, 520)
 
-    mainBoard, solutionSeq = generateNewPuzzle(80)
+    mainBoard, solutionSeq = generateNewPuzzle(3*size*size)
     SOLVEDBOARD = (
         getStartingBoard()
     )  # a solved board is the same as the board in a start state.
@@ -83,16 +96,26 @@ def main(size):
 
     global running
     running = True
+    text = ""
 
     while running:  # main game loop
         slideTo = None  # the direction, if any, a tile should slide
         msg = "Click tile or press arrow keys to slide."  # contains the message to show in the upper left corner.
         if mainBoard == SOLVEDBOARD:
             msg = "Solved!"
+        if text!= "": msg = "Calculating..."
 
         drawBoard(mainBoard, msg)
 
         checkForQuit()
+
+        if text!= "": 
+            drawBoard(mainBoard, "Calculating...")
+            pygame.display.update()
+            slidingPuzzleGame.run_algo(BOARDHEIGHT, text)
+            read_algo_and_show(mainBoard, text)
+            text = ""
+
         for event in pygame.event.get():  # event handling loop
             if event.type == MOUSEBUTTONUP:
                 spotx, spoty = getSpotClicked(mainBoard, event.pos[0], event.pos[1])
@@ -104,19 +127,40 @@ def main(size):
                         allMoves = []
                     elif NEW_RECT.collidepoint(event.pos):
                         mainBoard, solutionSeq = generateNewPuzzle(
-                            80
+                            3*size*size
                         )  # clicked on New Game button
                         allMoves = []
                     elif SOLVE_RECT.collidepoint(event.pos):
-                        write_board_to_file(mainBoard)
-                        slidingPuzzleGame.abc(BOARDHEIGHT, "HUMAN")
-                        read_algo_and_show(mainBoard, "human")
+                        # NOTE:
+                        flag = 1-flag
+                        human_flag = 1 - human_flag
+                        if size<=4: 
+                            dfs_flag = 1-dfs_flag
+                            ids_flag = 1-ids_flag
+                        if size<=6: 
+                            bfs_flag = 1-bfs_flag
+                            astar_flag = 1-astar_flag
+                        
+                        # write_board_to_file(mainBoard)
+                        # slidingPuzzleGame.run_algo(BOARDHEIGHT, "HUMAN")
+                        # read_algo_and_show(mainBoard, "human")
                         # resetAnimation(
                         #     mainBoard, solutionSeq + allMoves
                         # )  # clicked on Solve button
 
                         solutionSeq = []
                         allMoves = []
+
+                    if flag==1:
+                        write_board_to_file(mainBoard)
+                    
+                    if astar_flag==1 and astar_rect.collidepoint(event.pos): text="A*"
+                    elif bfs_flag==1 and bfs_rect.collidepoint(event.pos): text = "BFS"
+                    elif dfs_flag==1 and dfs_rect.collidepoint(event.pos): text = "DFS"
+                    elif human_flag==1 and human_rect.collidepoint(event.pos): text="HUMAN"
+                    elif ids_flag==1 and ids_rect.collidepoint(event.pos): text = "IDS"
+
+
                 else:
                     # check if the clicked tile was next to the blank spot
 
@@ -313,6 +357,15 @@ def drawBoard(board, message):
     DISPLAYSURF.blit(NEW_SURF, NEW_RECT)
     DISPLAYSURF.blit(SOLVE_SURF, SOLVE_RECT)
 
+    if(flag ==1):
+        DISPLAYSURF.blit(human_surf, human_rect)
+        if BOARDHEIGHT<=6:
+            DISPLAYSURF.blit(astar_surf, astar_rect)
+            DISPLAYSURF.blit(bfs_surf, bfs_rect)
+        if BOARDHEIGHT<=4:
+            DISPLAYSURF.blit(dfs_surf, dfs_rect)
+            DISPLAYSURF.blit(ids_surf, ids_rect)
+
 
 def slideAnimation(board, direction, message, animationSpeed):
     # Note: This function does not check if the move is valid.
@@ -367,7 +420,7 @@ def generateNewPuzzle(numSlides):
     for i in range(numSlides):
         move = getRandomMove(board, lastMove)
         slideAnimation(
-            board, move, "Generating new puzzle...", animationSpeed=int(TILESIZE / 3)
+            board, move, "Generating new puzzle...", animationSpeed=int(BOARDHEIGHT*BOARDHEIGHT*TILESIZE // 30)
         )
         makeMove(board, move)
         sequence.append(move)
@@ -410,21 +463,31 @@ def read_algo_and_show(board, algorithms):
     file = open(path, "r")
     lines = file.readlines()
     text = "Solving by " + algorithms +" algorithm..."
+    check_exit = False
     for line in lines:
         move =""
         if line.strip() == "UP": 
             move = DOWN
-        if line.strip() == "DOWN": 
+        elif line.strip() == "DOWN": 
             move = UP
-        if line.strip() == "LEFT": 
+        elif line.strip() == "LEFT": 
             move = RIGHT
-        if line.strip() == "RIGHT": 
+        elif line.strip() == "RIGHT": 
             move = LEFT
 
-        slideAnimation(board, move, text, animationSpeed=int(TILESIZE / 3))
+        if check_exit == True: 
+            break
+
+        slideAnimation(board, move, text, animationSpeed=int( BOARDHEIGHT*BOARDHEIGHT*TILESIZE // 30))
         makeMove(board, move)
+
+        for event in pygame.event.get():
+            if event.type == KEYUP:
+                if event.key == K_q: 
+                    check_exit = True
+            pygame.event.post(event)
         
-
-
+    
+    
 # if __name__ == "__main__":
 #     main(3)
