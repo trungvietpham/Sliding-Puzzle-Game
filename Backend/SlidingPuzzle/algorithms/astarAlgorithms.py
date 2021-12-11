@@ -2,7 +2,7 @@ import heapq as pq  # hang doi uu tien
 import sys
 import os
 sys.path.append("..")
-import utils 
+from utils import utils 
 from nodeSlidingPuzzle import goalState
 
 

@@ -9,7 +9,7 @@ from utils import utils
 from nodeSlidingPuzzle import heuristic
 from nodeSlidingPuzzle.Node import Node
 
-def abc(n, algorithms):
+def run_algo(n, algorithms):
     start = time.time()  # bat dau tinh gio
 
     #Khỏi tạo n và tên thuật toán
