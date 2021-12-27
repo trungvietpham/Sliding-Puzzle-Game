@@ -48,10 +48,14 @@ RIGHT = "right"
 def main(size):
     global FPSCLOCK, DISPLAYSURF, BASICFONT, RESET_SURF, RESET_RECT, NEW_SURF, NEW_RECT, SOLVE_SURF, SOLVE_RECT, astar_surf, astar_rect, bfs_surf, bfs_rect, dfs_surf, dfs_rect, human_surf, human_rect, ids_surf, ids_rect
     global BOARDWIDTH, BOARDHEIGHT, TILESIZE, XMARGIN, YMARGIN, boardsize
+    global current_time, start_time, move, move_btn, move_surf, move_rect, time_btn, time_surf, time_rect
+    move = 0
+    current_time = 0.0
+    start_time=0.0
     global flag #show or hide when click on solve
-    BOARDWIDTH = size
-    BOARDHEIGHT = size
-    boardsize = 500
+    BOARDWIDTH = size 
+    BOARDHEIGHT = size 
+    boardsize = 500 
     flag = 0
     human_flag = 0
     dfs_flag = 0
@@ -71,22 +75,29 @@ def main(size):
     pygame.display.set_caption("Slide Puzzle")
     BASICFONT = pygame.font.Font("freesansbold.ttf", BASICFONTSIZE)
 
+
     # Store the option buttons and their rectangles in OPTIONS.
-    offsetButtonY = (WINDOWWIDTH - XMARGIN - boardsize) - 20 
-    RESET_SURF, RESET_RECT = makeText(
+    offsetButtonY = (WINDOWWIDTH - XMARGIN - boardsize) -100
+
+    time_surf, time_rect = makeTextCenter("Time", BUTTONTEXTCOLOR, BGCOLOR, WINDOWWIDTH - offsetButtonY, 100)
+    move_surf, move_rect = makeTextCenter("Move", BUTTONTEXTCOLOR, BGCOLOR, WINDOWWIDTH-offsetButtonY, 200)  
+
+    RESET_SURF, RESET_RECT = makeTextCenter(
         "Reset", BUTTONTEXTCOLOR, BUTTONCOLOR, WINDOWWIDTH - offsetButtonY, 300
     )
-    NEW_SURF, NEW_RECT = makeText(
+    NEW_SURF, NEW_RECT = makeTextCenter(
         "New Game", BUTTONTEXTCOLOR, BUTTONCOLOR, WINDOWWIDTH - offsetButtonY, 330
     )
-    SOLVE_SURF, SOLVE_RECT = makeText(
+    SOLVE_SURF, SOLVE_RECT = makeTextCenter(
         "Solve", BUTTONTEXTCOLOR, BUTTONCOLOR, WINDOWWIDTH - offsetButtonY, 360
     )
-    human_surf, human_rect = makeText("Human", BLACK, GREEN, XMARGIN+boardsize+50, 400)
-    astar_surf, astar_rect = makeText("A-star", BLACK, GREEN, XMARGIN+boardsize+50, 430)
-    bfs_surf, bfs_rect = makeText("BFS", BLACK, GREEN, XMARGIN+boardsize+50, 460)
-    dfs_surf, dfs_rect = makeText("DFS", BLACK, GREEN, XMARGIN+boardsize+50, 490)
-    ids_surf, ids_rect = makeText("IDS", BLACK, GREEN, XMARGIN+boardsize+50, 520)
+    human_surf, human_rect = makeTextCenter("Human", BLACK, GREEN, WINDOWWIDTH - offsetButtonY, 400)
+    astar_surf, astar_rect = makeTextCenter("A-star", BLACK, GREEN, WINDOWWIDTH - offsetButtonY, 430)
+    bfs_surf, bfs_rect = makeTextCenter("BFS", BLACK, GREEN, WINDOWWIDTH - offsetButtonY, 460)
+    dfs_surf, dfs_rect = makeTextCenter("DFS", BLACK, GREEN, WINDOWWIDTH - offsetButtonY, 490)
+    ids_surf, ids_rect = makeTextCenter("IDS", BLACK, GREEN, WINDOWWIDTH - offsetButtonY, 520)
+    global done
+    done = False
 
     mainBoard, solutionSeq = generateNewPuzzle(3*size*size)
     SOLVEDBOARD = (
@@ -98,13 +109,18 @@ def main(size):
     running = True
     text = ""
 
+
     while running:  # main game loop
+
+        
+
         slideTo = None  # the direction, if any, a tile should slide
         msg = "Click tile or press arrow keys to slide."  # contains the message to show in the upper left corner.
         if mainBoard == SOLVEDBOARD:
             msg = "Solved!"
-        if text!= "": msg = "Calculating..."
-
+            done = True
+        else: done=False
+        if done==False: update_time()
         drawBoard(mainBoard, msg)
 
         checkForQuit()
@@ -195,6 +211,12 @@ def main(size):
         FPSCLOCK.tick(FPS)
 
 
+def update_time():
+    global start_time, current_time, done
+    if done==False:
+        if(move==1): start_time =time.time()
+        if(move!=0): current_time = int(time.time() - start_time)
+
 def terminate():
     pygame.quit()
     sys.exit()
@@ -237,26 +259,30 @@ def getBlankPosition(board):
                 return (x, y)
 
 
-def makeMove(board, move):
-    # This function does not check if the move is valid.
+def makeMove(board, direction):
+    # This function does not check if the direction is valid.
     blankx, blanky = getBlankPosition(board)
 
-    if move == UP:
+    global move
+    if done==True: move=0
+    else: move +=1
+
+    if direction == UP:
         board[blankx][blanky], board[blankx][blanky + 1] = (
             board[blankx][blanky + 1],
             board[blankx][blanky],
         )
-    elif move == DOWN:
+    elif direction == DOWN:
         board[blankx][blanky], board[blankx][blanky - 1] = (
             board[blankx][blanky - 1],
             board[blankx][blanky],
         )
-    elif move == LEFT:
+    elif direction == LEFT:
         board[blankx][blanky], board[blankx + 1][blanky] = (
             board[blankx + 1][blanky],
             board[blankx][blanky],
         )
-    elif move == RIGHT:
+    elif direction == RIGHT:
         board[blankx][blanky], board[blankx - 1][blanky] = (
             board[blankx - 1][blanky],
             board[blankx][blanky],
@@ -328,6 +354,22 @@ def makeText(text, color, bgcolor, top, left):
     textRect.topleft = (top, left)
     return (textSurf, textRect)
 
+
+def draw_text(text, color, x_coor, y_coor ):
+    textObject = BASICFONT.render(text, True, color)
+    textRect = textObject.get_rect()
+    textRect.center = (x_coor, y_coor)
+    DISPLAYSURF.blit(textObject, textRect)
+
+
+def button(text_content,text_color,button_color,dx,dy,width=200,height=50):
+    btn = pygame.Rect(dx, dy, width, height)
+    pygame.draw.rect(DISPLAYSURF, button_color, btn)
+    draw_text(text_content, text_color, dx + width // 2, dy + height // 2)
+    return btn
+
+
+
 def makeTextCenter(text, color, bgcolor, x, y): 
     # create the Surface and Rect objects for some text.
     textSurf = BASICFONT.render(text, True, color, bgcolor)
@@ -352,7 +394,11 @@ def drawBoard(board, message):
     pygame.draw.rect(
         DISPLAYSURF, BORDERCOLOR, (left - 5, top - 5, width + 11, height + 11), 4
     )
-
+    DISPLAYSURF.blit(time_surf,time_rect)
+    DISPLAYSURF.blit(move_surf, move_rect)
+    #note: thêm btn hiển thị thời gian và move 
+    time_btn = button(str(int(current_time)), BLACK, WHITE, WINDOWWIDTH-215, 120, width=100)
+    button(str(move), BLACK, WHITE, WINDOWWIDTH-215, 220, width=100)
     DISPLAYSURF.blit(RESET_SURF, RESET_RECT)
     DISPLAYSURF.blit(NEW_SURF, NEW_RECT)
     DISPLAYSURF.blit(SOLVE_SURF, SOLVE_RECT)
@@ -418,13 +464,15 @@ def generateNewPuzzle(numSlides):
     pygame.time.wait(500)  # pause 500 milliseconds for effect
     lastMove = None
     for i in range(numSlides):
-        move = getRandomMove(board, lastMove)
+        direction = getRandomMove(board, lastMove)
         slideAnimation(
-            board, move, "Generating new puzzle...", animationSpeed=int(BOARDHEIGHT*BOARDHEIGHT*TILESIZE // 30)
+            board, direction, "Generating new puzzle...", animationSpeed=int(BOARDHEIGHT*BOARDHEIGHT*TILESIZE // 30)
         )
-        makeMove(board, move)
-        sequence.append(move)
-        lastMove = move
+        makeMove(board, direction)
+        sequence.append(direction)
+        lastMove = direction
+        global move
+        move=0
     return (board, sequence)
 
 
@@ -480,6 +528,7 @@ def read_algo_and_show(board, algorithms):
 
         slideAnimation(board, move, text, animationSpeed=int( BOARDHEIGHT*BOARDHEIGHT*TILESIZE // 30))
         makeMove(board, move)
+        update_time()
 
         for event in pygame.event.get():
             if event.type == KEYUP:

@@ -88,7 +88,7 @@ def main_menu():
         clock.tick(60)
 
 
-def play():
+def play(): #for new game button
 
     running = True
 
