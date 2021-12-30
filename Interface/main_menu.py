@@ -1,5 +1,6 @@
 import pygame, sys, os
 from pygame.constants import K_ESCAPE, KEYDOWN, MOUSEBUTTONDOWN
+from Interface.play_game import WHITE
 
 path = os.path.join(os.path.dirname(__file__))
 sys.path.insert(1, path)
@@ -107,6 +108,7 @@ def play(): #for new game button
             text = str(i)+"x"+str(i)
             btn.append(button(text, font, screen, (i*2-11)*width//8- offset, 250, 100, 40))
 
+        chooseFromFileBtn = button("Choose from file", font, screen, width/2-100, 400, 200, 40, text_color=(255,0,0), button_color=WHITE)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -118,6 +120,9 @@ def play(): #for new game button
                 for i in range(0,8): 
                     if btn[i].collidepoint(pygame.mouse.get_pos()):
                         play_game.main(i+2)
+                
+                if chooseFromFileBtn.collidepoint(pygame.mouse.get_pos()):
+                    play_game.main(0,1)
 
         pygame.display.update()
         clock.tick(60)

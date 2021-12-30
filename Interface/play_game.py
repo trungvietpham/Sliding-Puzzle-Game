@@ -1,6 +1,7 @@
 # Slide Puzzle
 
-import abc
+import numpy as np
+import re
 from tkinter.constants import S, TRUE
 import pygame, sys, random,os
 import time
@@ -45,14 +46,17 @@ LEFT = "left"
 RIGHT = "right"
 
 
-def main(size):
+def main(size, fileFlag=0):
     global FPSCLOCK, DISPLAYSURF, BASICFONT, RESET_SURF, RESET_RECT, NEW_SURF, NEW_RECT, SOLVE_SURF, SOLVE_RECT, astar_surf, astar_rect, bfs_surf, bfs_rect, dfs_surf, dfs_rect, human_surf, human_rect, ids_surf, ids_rect
     global BOARDWIDTH, BOARDHEIGHT, TILESIZE, XMARGIN, YMARGIN, boardsize
     global current_time, start_time, move, move_btn, move_surf, move_rect, time_btn, time_surf, time_rect
     move = 0
     current_time = 0.0
     start_time=0.0
+    mainBoard=[]
+    if fileFlag==1: mainBoard, size = generateNewPuzzle(0, 1)
     global flag #show or hide when click on solve
+    
     BOARDWIDTH = size 
     BOARDHEIGHT = size 
     boardsize = 500 
@@ -99,7 +103,8 @@ def main(size):
     global done
     done = False
 
-    mainBoard, solutionSeq = generateNewPuzzle(3*size*size)
+    if fileFlag==0: mainBoard = generateNewPuzzle(3*size*size)
+
     SOLVEDBOARD = (
         getStartingBoard()
     )  # a solved board is the same as the board in a start state.
@@ -119,7 +124,10 @@ def main(size):
         if mainBoard == SOLVEDBOARD:
             msg = "Solved!"
             done = True
-        else: done=False
+            #Call win GUI
+
+        else: 
+            done=False
         if done==False: update_time()
         drawBoard(mainBoard, msg)
 
@@ -142,7 +150,7 @@ def main(size):
                         resetAnimation(mainBoard, allMoves)  # clicked on Reset button
                         allMoves = []
                     elif NEW_RECT.collidepoint(event.pos):
-                        mainBoard, solutionSeq = generateNewPuzzle(
+                        mainBoard = generateNewPuzzle(
                             3*size*size
                         )  # clicked on New Game button
                         allMoves = []
@@ -150,10 +158,10 @@ def main(size):
                         # NOTE:
                         flag = 1-flag
                         human_flag = 1 - human_flag
-                        if size<=4: 
+                        if size<=3: 
                             dfs_flag = 1-dfs_flag
                             ids_flag = 1-ids_flag
-                        if size<=6: 
+                        if size<=5: 
                             bfs_flag = 1-bfs_flag
                             astar_flag = 1-astar_flag
                         
@@ -255,7 +263,7 @@ def getBlankPosition(board):
     # Return the x and y of board coordinates of the blank space.
     for x in range(BOARDWIDTH):
         for y in range(BOARDHEIGHT):
-            if board[x][y] == BLANK:
+            if board[x][y] == BLANK or board[x][y] == 0 or board[x][y] == "_":
                 return (x, y)
 
 
@@ -263,7 +271,7 @@ def makeMove(board, direction):
     # This function does not check if the direction is valid.
     blankx, blanky = getBlankPosition(board)
 
-    global move
+    global move, done
     if done==True: move=0
     else: move +=1
 
@@ -405,10 +413,10 @@ def drawBoard(board, message):
 
     if(flag ==1):
         DISPLAYSURF.blit(human_surf, human_rect)
-        if BOARDHEIGHT<=6:
+        if BOARDHEIGHT<=5:
             DISPLAYSURF.blit(astar_surf, astar_rect)
             DISPLAYSURF.blit(bfs_surf, bfs_rect)
-        if BOARDHEIGHT<=4:
+        if BOARDHEIGHT<=3:
             DISPLAYSURF.blit(dfs_surf, dfs_rect)
             DISPLAYSURF.blit(ids_surf, ids_rect)
 
@@ -454,26 +462,47 @@ def slideAnimation(board, direction, message, animationSpeed):
         FPSCLOCK.tick(FPS)
 
 
-def generateNewPuzzle(numSlides):
+def generateNewPuzzle(numSlides, flag=0):
     # From a starting configuration, make numSlides number of moves (and
     # animate these moves).
-    sequence = []
-    board = getStartingBoard()
-    drawBoard(board, "")
-    pygame.display.update()
-    pygame.time.wait(500)  # pause 500 milliseconds for effect
-    lastMove = None
-    for i in range(numSlides):
-        direction = getRandomMove(board, lastMove)
-        slideAnimation(
-            board, direction, "Generating new puzzle...", animationSpeed=int(BOARDHEIGHT*BOARDHEIGHT*TILESIZE // 30)
-        )
-        makeMove(board, direction)
-        sequence.append(direction)
-        lastMove = direction
-        global move
-        move=0
-    return (board, sequence)
+    if flag==0: 
+    
+        board = getStartingBoard()
+        drawBoard(board, "")
+        pygame.display.update()
+        pygame.time.wait(500)  # pause 500 milliseconds for effect
+        lastMove = None
+        for i in range(numSlides):
+            direction = getRandomMove(board, lastMove)
+            slideAnimation(
+                board, direction, "Generating new puzzle...", animationSpeed=int(BOARDHEIGHT*BOARDHEIGHT*TILESIZE // 30)
+            )
+            makeMove(board, direction)
+            lastMove = direction
+            global move
+            move=0
+        return board
+
+    elif flag==1:#Read data from file
+        path = os.path.join(os.path.dirname(__file__), "..", "Backend", "SlidingPuzzle",  "inputOutput", "data.txt")
+        file = open(path, "r")
+        lines = file.readlines()
+        board = []
+        size=0
+        for line in lines:
+            element = re.split(" ", line)
+            tmp = []
+            for a in element:
+                if a=="0": tmp.append(None)
+                else: tmp.append(int(a))
+            board.append(tmp)
+            size+=1
+        
+        for i in range(0,size):
+            for j in range(i, size):
+                board[i][j], board[j][i] = board[j][i], board[i][j]
+        return (board, size)
+
 
 
 def resetAnimation(board, allMoves):
